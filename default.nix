@@ -16,6 +16,6 @@ pkgs.mkShell {
         -I${glfw.outPath}/include/GLFW \
         -I${vulkan-headers.outPath}/include/vulkan \
         -I${vulkan-headers.outPath}/include/vk_video \
-        -o main main.c
+        -o main *.c
     '';
 }

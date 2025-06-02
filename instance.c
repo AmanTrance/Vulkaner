@@ -1,6 +1,9 @@
+#include "instance.h"
+
+#include "vulkan_core.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "vulkan_core.h"
 
 VkInstance create_vulkan_instance(const char* application_name, const char** const extensions, uint32_t extensions_length) {
     VkApplicationInfo vulkan_application_info = {
