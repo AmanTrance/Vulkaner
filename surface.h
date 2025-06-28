@@ -5,6 +5,6 @@
 #include "vulkan_core.h"
 #include "glfw3.h"
 
-VkSurfaceKHR setup_surface(VkInstance vulkan_instance, Device* device, GLFWwindow* window);
+VkSurfaceKHR setupSurface(VkInstance vulkanInstance, GLFWwindow* window);
 
 #endif

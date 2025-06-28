@@ -3,6 +3,6 @@
 
 #include "vulkan_core.h"
 
-VkInstance create_vulkan_instance(const char* application_name, const char** const extensions, uint32_t extensions_length);
+VkInstance createVulkanInstance(const char* applicationName, const char** const extensions, uint32_t extensionsLength);
 
 #endif

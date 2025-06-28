@@ -2,22 +2,19 @@
 #include "device.h"
 
 #include "vulkan_core.h"
+#include "vulkan.h"
 #include "glfw3.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-VkSurfaceKHR setup_surface(VkInstance vulkan_instance, Device* device, GLFWwindow* window) {
-    VkSurfaceKHR surface_handle;
+VkSurfaceKHR setupSurface(VkInstance vulkanInstance, GLFWwindow* window) {
+    VkSurfaceKHR surfaceHandle;
 
-    if (glfwCreateWindowSurface(vulkan_instance, window, NULL, &surface_handle) != VK_SUCCESS) {
+    if (glfwCreateWindowSurface(vulkanInstance, window, NULL, &surfaceHandle) != VK_SUCCESS) {
         printf("Window Surface Creation Failed\n");
-        vkDestroyDevice(device->logical_device, NULL);
-        vkDestroyInstance(vulkan_instance, NULL);
-        glfwDestroyWindow(window);
-        glfwTerminate();
-        exit(1);
+        return NULL;
     }
 
-    return surface_handle;
+    return surfaceHandle;
 }
