@@ -5,6 +5,7 @@ pkgs.mkShell {
         vulkan-tools
         vulkan-loader
         glfw
+        shaderc
     ];
 
     LD_LIBRARY_PATH = with pkgs; ''

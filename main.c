@@ -2,6 +2,7 @@
 #include "device.h"
 #include "surface.h"
 #include "swapchain.h"
+#include "spirv.h"
 
 #include "glfw3.h"
 #include "vulkan_core.h"
@@ -11,6 +12,8 @@
 #include <stdint.h>
 
 int main() {
+    readSpirv("./vertex.spv", "./fragment.spv");
+
     if (!glfwInit()) {
         return 1;
     }
@@ -35,8 +38,8 @@ int main() {
 
     Device device = setupDevice(vulkanInstance);
 
-    VkSwapchainKHR swapchain = createSwapchain(vulkanInstance, surfaceHandle, &device, window);
-    if (swapchain == NULL) {
+    SwapchainDetails swapchainDetails = createSwapchain(vulkanInstance, surfaceHandle, &device, window);
+    if (swapchainDetails.swapchain == NULL) {
         vkDestroySurfaceKHR(vulkanInstance, surfaceHandle, NULL);
         vkDestroyDevice(device.logicalDevice, NULL);
         vkDestroyInstance(vulkanInstance, NULL);
@@ -49,10 +52,17 @@ int main() {
         glfwPollEvents();
     }
 
-    vkDestroySwapchainKHR(device.logicalDevice, swapchain, NULL);
+    for (int i = 0; i < swapchainDetails.imagesLength; i++) {
+        vkDestroyImageView(device.logicalDevice, swapchainDetails.imageViews[i], NULL);
+    }
+
+    vkDestroySwapchainKHR(device.logicalDevice, swapchainDetails.swapchain, NULL);
     vkDestroySurfaceKHR(vulkanInstance, surfaceHandle, NULL);
     vkDestroyDevice(device.logicalDevice, NULL);
     vkDestroyInstance(vulkanInstance, NULL);
+
+    free(swapchainDetails.imageViews);
+    free(swapchainDetails.images);
 
     glfwDestroyWindow(window);
     glfwTerminate();

@@ -5,26 +5,34 @@
 #include "glfw3.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
-VkSwapchainKHR createSwapchain(VkInstance vulkanInstance, VkSurfaceKHR surfaceHandler, Device* device, GLFWwindow* window) {
+SwapchainDetails createSwapchain(VkInstance vulkanInstance, VkSurfaceKHR surfaceHandler, Device* device, GLFWwindow* window) {
     int width;
     int height;
-    
+
+    SwapchainDetails swapchainDetails = {
+        .swapchain = NULL,
+        .images = NULL,
+        .imageViews = NULL,
+        .imagesLength = 0
+    };    
+
     glfwGetFramebufferSize(window, &width, &height);
 
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
     if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device->physicalDevice, surfaceHandler, &surfaceCapabilities) != VK_SUCCESS) {
-        return NULL;
+        return swapchainDetails;
     }
 
     uint32_t presentModesCount;
     if (vkGetPhysicalDeviceSurfacePresentModesKHR(device->physicalDevice, surfaceHandler, &presentModesCount, NULL) != VK_SUCCESS) {
-        return NULL;
+        return swapchainDetails;
     }
 
     VkPresentModeKHR presentModes[presentModesCount];
     if (vkGetPhysicalDeviceSurfacePresentModesKHR(device->physicalDevice, surfaceHandler, &presentModesCount, presentModes) != VK_SUCCESS) {
-        return NULL;
+        return swapchainDetails;
     }
 
     VkPresentModeKHR presentModeToUse;
@@ -40,12 +48,12 @@ VkSwapchainKHR createSwapchain(VkInstance vulkanInstance, VkSurfaceKHR surfaceHa
 
     uint32_t formatCounts;
     if (vkGetPhysicalDeviceSurfaceFormatsKHR(device->physicalDevice, surfaceHandler, &formatCounts, NULL) != VK_SUCCESS) {
-        return NULL;
+        return swapchainDetails;
     }
 
     VkSurfaceFormatKHR formats[formatCounts];
-    if (vkGetPhysicalDeviceSurfaceFormatsKHR(device->physicalDevice, surfaceHandler, &formatCounts, formats) !== VK_SUCCESS) {
-        return NULL;
+    if (vkGetPhysicalDeviceSurfaceFormatsKHR(device->physicalDevice, surfaceHandler, &formatCounts, formats) != VK_SUCCESS) {
+        return swapchainDetails;
     }
 
     VkFormat formatToUse;
@@ -63,7 +71,7 @@ VkSwapchainKHR createSwapchain(VkInstance vulkanInstance, VkSurfaceKHR surfaceHa
         colorSpaceToUse = formats[0].colorSpace;
     }
 
-    VkSwapchainCreateInfoKHR const swapchainCreateInfo = {
+    const VkSwapchainCreateInfoKHR swapchainCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .pNext = NULL,
         .oldSwapchain = NULL,
@@ -89,8 +97,55 @@ VkSwapchainKHR createSwapchain(VkInstance vulkanInstance, VkSurfaceKHR surfaceHa
 
     VkSwapchainKHR swapchain;
     if (vkCreateSwapchainKHR(device->logicalDevice, &swapchainCreateInfo, NULL, &swapchain) != VK_SUCCESS) {
-        return NULL;
+        return swapchainDetails;
     }
 
-    return swapchain;
+    uint32_t imagesCount;
+    if (vkGetSwapchainImagesKHR(device->logicalDevice, swapchain, &imagesCount, NULL) != VK_SUCCESS) {
+        return swapchainDetails;
+    }
+
+    VkImage* images = (VkImage*)malloc(sizeof(VkImage) * imagesCount);
+    if (vkGetSwapchainImagesKHR(device->logicalDevice, swapchain, &imagesCount, images) != VK_SUCCESS) {
+        free(images);
+        return swapchainDetails;
+    }
+
+    VkImageView* imageViews = (VkImageView*)malloc(sizeof(VkImageView) * imagesCount);
+
+    for (int i = 0; i < imagesCount; i++) {
+        const VkImageViewCreateInfo imageViewCreateInfo = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .pNext = NULL,
+            .image = images[i],
+            .format = formatToUse,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .components = {
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY
+            },
+            .subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseArrayLayer = 0,
+                .baseMipLevel = 0,
+                .layerCount = 1,
+                .levelCount = 1
+            }
+        };
+
+        if (vkCreateImageView(device->logicalDevice, &imageViewCreateInfo, NULL, &imageViews[i]) != VK_SUCCESS) {
+            free(images);
+            free(imageViews);
+            return swapchainDetails;
+        }
+    }
+
+    swapchainDetails.swapchain = swapchain;
+    swapchainDetails.images = images;
+    swapchainDetails.imageViews = imageViews;
+    swapchainDetails.imagesLength = imagesCount;
+
+    return swapchainDetails;
 }
