@@ -5,42 +5,72 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Device setupDevice(VkInstance vulkanInstance) {
-    VkPhysicalDevice physicalDevices[5];
-    uint32_t devicesCount = 5;
+void createDevice(VulkanerStateMachine *stateMachine)
+{
+    uint32_t devicesCount;
+    if (
+        vkEnumeratePhysicalDevices(stateMachine->vulkanInstance, &devicesCount, NULL) != VK_SUCCESS)
+    {
+        exit(1);
+    }
 
-    vkEnumeratePhysicalDevices(vulkanInstance, &devicesCount, physicalDevices);
+    VkPhysicalDevice physicalDevices[devicesCount];
+    if (
+        vkEnumeratePhysicalDevices(stateMachine->vulkanInstance, &devicesCount, physicalDevices) != VK_SUCCESS)
+    {
+        exit(1);
+    }
 
-    uint32_t deviceQueuePropertiesCount = 10;
-    VkQueueFamilyProperties* deviceQueueFamilyProperties = (VkQueueFamilyProperties*)malloc(sizeof(VkQueueFamilyProperties) * 10);
+    uint32_t deviceQueuePropertiesCount;
+    vkGetPhysicalDeviceQueueFamilyProperties(
+        physicalDevices[devicesCount - 1],
+        &deviceQueuePropertiesCount,
+        NULL);
 
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevices[devicesCount - 1], &deviceQueuePropertiesCount, deviceQueueFamilyProperties);
+    stateMachine->queueFamilyProperties = (VkQueueFamilyProperties *)malloc(
+        sizeof(VkQueueFamilyProperties) * deviceQueuePropertiesCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(
+        physicalDevices[devicesCount - 1],
+        &deviceQueuePropertiesCount,
+        stateMachine->queueFamilyProperties);
 
     VkPhysicalDeviceFeatures physicalDeviceFeatures;
 
-    vkGetPhysicalDeviceFeatures(physicalDevices[devicesCount - 1], &physicalDeviceFeatures);
+    vkGetPhysicalDeviceFeatures(
+        physicalDevices[devicesCount - 1],
+        &physicalDeviceFeatures);
 
-    uint32_t deviceExtensionsLength = 200;
-    VkExtensionProperties* deviceExtensions = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * 200);
+    uint32_t deviceExtensionsLength;
+    vkEnumerateDeviceExtensionProperties(
+        physicalDevices[devicesCount - 1],
+        NULL,
+        &deviceExtensionsLength,
+        NULL);
 
-    vkEnumerateDeviceExtensionProperties(physicalDevices[devicesCount - 1], NULL, &deviceExtensionsLength, deviceExtensions);
+    VkExtensionProperties *deviceExtensions = (VkExtensionProperties *)malloc(
+        sizeof(VkExtensionProperties) * deviceExtensionsLength);
+    vkEnumerateDeviceExtensionProperties(
+        physicalDevices[devicesCount - 1],
+        NULL,
+        &deviceExtensionsLength,
+        deviceExtensions);
 
-    const char* extensions[deviceExtensionsLength];
+    const char *extensions[deviceExtensionsLength];
 
-    for (uint32_t i = 0; i < deviceExtensionsLength; i++) {
+    for (uint32_t i = 0; i < deviceExtensionsLength; i++)
+    {
         extensions[i] = deviceExtensions[i].extensionName;
     }
 
-    float queuePriorities[1] = { 1.0 };
+    float queuePriorities[1] = {1.0};
 
     VkDeviceQueueCreateInfo deviceQueueInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
         .pNext = NULL,
         .queueFamilyIndex = 0,
-        .queueCount = deviceQueueFamilyProperties[0].queueCount,
+        .queueCount = stateMachine->queueFamilyProperties[0].queueCount,
         .flags = 0,
-        .pQueuePriorities = queuePriorities
-    };
+        .pQueuePriorities = queuePriorities};
 
     VkDeviceCreateInfo logicalDeviceInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -52,29 +82,26 @@ Device setupDevice(VkInstance vulkanInstance) {
         .ppEnabledExtensionNames = extensions,
         .pEnabledFeatures = &physicalDeviceFeatures,
         .pQueueCreateInfos = &deviceQueueInfo,
-        .queueCreateInfoCount = 1
-    };
+        .queueCreateInfoCount = 1};
 
-    VkDevice logicalDevice;
-    if (vkCreateDevice(physicalDevices[devicesCount - 1], &logicalDeviceInfo, NULL, &logicalDevice) != VK_SUCCESS) {
+    if (
+        vkCreateDevice(
+            physicalDevices[devicesCount - 1],
+            &logicalDeviceInfo,
+            NULL,
+            &stateMachine->logicalDevice) != VK_SUCCESS)
+    {
         printf("Logical Device Creation Failed\n");
-        free(deviceQueueFamilyProperties);
-        free(deviceExtensions);
-        vkDestroyInstance(vulkanInstance, NULL);
         exit(1);
     }
 
-    VkQueue device_queue;
-    vkGetDeviceQueue(logicalDevice, 0, 0, &device_queue);
+    vkGetDeviceQueue(
+        stateMachine->logicalDevice,
+        0,
+        0,
+        &stateMachine->deviceQueue);
 
-    Device device = {
-        .physicalDevice = physicalDevices[devicesCount - 1],
-        .logicalDevice = logicalDevice,
-        .deviceQueue = device_queue
-    };
+    stateMachine->physicalDevice = physicalDevices[devicesCount - 1];
 
     free(deviceExtensions);
-    free(deviceQueueFamilyProperties);
-
-    return device;
 }

@@ -1,14 +1,8 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include "vulkan_core.h"
+#include "state.h"
 
-typedef struct Device {
-    VkPhysicalDevice        physicalDevice;
-    VkDevice                logicalDevice;
-    VkQueue                 deviceQueue;
-} Device;
-
-Device setupDevice(VkInstance vulkanInstance);
+void createDevice(VulkanerStateMachine *stateMachine);
 
 #endif

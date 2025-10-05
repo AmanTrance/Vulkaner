@@ -1,5 +1,9 @@
 { pkgs ? import <nixpkgs> { } } :
 pkgs.mkShell {
+    nativeBuildInputs = with pkgs; [
+        glibc
+    ];
+
     buildInputs = with pkgs; [
         vulkan-headers
         vulkan-tools
@@ -9,7 +13,7 @@ pkgs.mkShell {
     ];
 
     LD_LIBRARY_PATH = with pkgs; ''
-        ${musl.outPath}/lib:${glfw.outPath}/lib:${vulkan-loader.outPath}/lib
+        ${glibc.outPath}/lib:${glfw.outPath}/lib:${vulkan-loader.outPath}/lib
     '';
 
     shellHook = with pkgs; ''

@@ -1,8 +1,8 @@
 #ifndef INSTANCE_H
 #define INSTANCE_H
 
-#include "vulkan_core.h"
+#include "state.h"
 
-VkInstance createVulkanInstance(const char* applicationName, const char** const extensions, uint32_t extensionsLength);
+void createVulkanInstance(VulkanerStateMachine *stateMachine, const char *applicationName);
 
 #endif
