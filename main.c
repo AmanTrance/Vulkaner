@@ -27,12 +27,13 @@ int main() {
     createDevice(&stateMachine);
     createSurface(&stateMachine);
     createSwapchain(&stateMachine);
+    createShaderModules(&stateMachine);
 
     while (!glfwWindowShouldClose(stateMachine.window)) {
         glfwPollEvents();
     }
 
-    glfwDestroyWindow(stateMachine.window);
+    destroyStateMachine(&stateMachine);
     glfwTerminate();
 
     return 0;

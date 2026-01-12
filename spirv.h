@@ -3,11 +3,8 @@
 
 #include <stdint.h>
 
-typedef struct SpirvByteCode {
-    uint8_t* vertexBuffer;
-    uint8_t* fragmentBuffer;
-} SpirvByteCode;
+#include "state.h"
 
-SpirvByteCode readSpirv(const char* vPath, const char* fPath);
+void createShaderModules(VulkanerStateMachine* stateMachine);
 
 #endif

@@ -6,7 +6,7 @@
 
 typedef struct VulkanerStateMachine
 {
-    __uint32_t imagesLength;
+    uint32_t imagesLength;
     GLFWwindow *window;
     VkImage *images;
     VkImageView *imageViews;
@@ -18,5 +18,7 @@ typedef struct VulkanerStateMachine
     VkQueue deviceQueue;
     VkSwapchainKHR swapchain;
 } VulkanerStateMachine;
+
+void destroyStateMachine(VulkanerStateMachine* stateMachine);
 
 #endif
