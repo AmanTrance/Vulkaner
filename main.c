@@ -31,10 +31,6 @@ int main() {
     createShaderModules(&stateMachine);
     createGraphicsPipeline(&stateMachine);
 
-    while (!glfwWindowShouldClose(stateMachine.window)) {
-        glfwPollEvents();
-    }
-
     destroyStateMachine(&stateMachine);
     glfwTerminate();
 

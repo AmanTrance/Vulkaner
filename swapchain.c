@@ -8,13 +8,10 @@
 
 void createSwapchain(VulkanerStateMachine *stateMachine)
 {
-    int width;
-    int height;
-
     glfwGetFramebufferSize(
         stateMachine->window,
-        &width,
-        &height);
+        &stateMachine->width,
+        &stateMachine->height);
 
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
     if (
@@ -118,8 +115,8 @@ void createSwapchain(VulkanerStateMachine *stateMachine)
         .imageFormat = formatToUse,
         .clipped = VK_TRUE,
         .imageExtent = {
-            .height = height,
-            .width = width},
+            .height = stateMachine->height,
+            .width = stateMachine->width},
         .minImageCount = surfaceCapabilities.minImageCount,
         .imageUsage = surfaceCapabilities.supportedUsageFlags,
         .flags = VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,

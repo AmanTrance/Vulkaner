@@ -9,8 +9,8 @@
 
 void createShaderModules(VulkanerStateMachine *stateMachine)
 {
-    int vertexfd = open("vertex.spv", O_RDONLY);
-    int fragmentfd = open("fragment.spv", O_RDONLY);
+    int vertexfd = open("./vertex.spv", O_RDONLY);
+    int fragmentfd = open("./fragment.spv", O_RDONLY);
 
     struct stat vertexStat;
     struct stat fragmentStat;

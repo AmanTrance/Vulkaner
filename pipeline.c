@@ -1,6 +1,7 @@
 #include "pipeline.h"
 
 #include <stdlib.h>
+#include <unistd.h>
 
 void createGraphicsPipeline(VulkanerStateMachine *stateMachine)
 {
@@ -32,7 +33,7 @@ void createGraphicsPipeline(VulkanerStateMachine *stateMachine)
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode = VK_POLYGON_MODE_FILL,
         .lineWidth = 1.0f,
-        .cullMode = VK_CULL_MODE_BACK_BIT,
+        .cullMode = VK_CULL_MODE_NONE,
         .frontFace = VK_FRONT_FACE_CLOCKWISE,
         .depthBiasEnable = VK_FALSE,
         .depthBiasConstantFactor = 0.0f,
@@ -91,8 +92,7 @@ void createGraphicsPipeline(VulkanerStateMachine *stateMachine)
         .attachmentCount = 1,
         .pAttachments = &colorAttachment,
         .subpassCount = 1,
-        .pSubpasses = &subpass
-    };
+        .pSubpasses = &subpass};
 
     VkRenderPass renderPass;
     if (
@@ -131,5 +131,208 @@ void createGraphicsPipeline(VulkanerStateMachine *stateMachine)
             &graphicsPipeline) != VK_SUCCESS)
     {
         exit(1);
+    }
+
+    VkFramebuffer framebuffers[stateMachine->imagesLength];
+    for (uint32_t i = 0; i < stateMachine->imagesLength; i++)
+    {
+        VkImageView attachments[] = {
+            stateMachine->imageViews[i]};
+
+        VkFramebufferCreateInfo framebufferInfo = {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .renderPass = renderPass,
+            .attachmentCount = 1,
+            .pAttachments = attachments,
+            .width = stateMachine->width,
+            .height = stateMachine->height,
+            .layers = 1,
+        };
+
+        if (
+            vkCreateFramebuffer(
+                stateMachine->logicalDevice,
+                &framebufferInfo,
+                NULL,
+                &framebuffers[i]) != VK_SUCCESS)
+        {
+            exit(1);
+        }
+    }
+
+    VkCommandPoolCreateInfo poolInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .queueFamilyIndex = 0};
+
+    VkCommandPool commandPool;
+    if (
+        vkCreateCommandPool(
+            stateMachine->logicalDevice,
+            &poolInfo,
+            NULL,
+            &commandPool) != VK_SUCCESS)
+    {
+        exit(1);
+    }
+
+    VkCommandBufferAllocateInfo allocInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = commandPool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1};
+
+    VkCommandBuffer commandBuffer;
+    if (
+        vkAllocateCommandBuffers(
+            stateMachine->logicalDevice,
+            &allocInfo,
+            &commandBuffer) != VK_SUCCESS)
+    {
+        exit(1);
+    }
+
+    VkSemaphoreCreateInfo semaphoreInfo = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+
+    VkFenceCreateInfo fenceInfo = {
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .flags = VK_FENCE_CREATE_SIGNALED_BIT};
+
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+    VkFence inFlightFence;
+
+    if (
+        vkCreateSemaphore(stateMachine->logicalDevice, &semaphoreInfo, NULL, &imageAvailableSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(stateMachine->logicalDevice, &semaphoreInfo, NULL, &renderFinishedSemaphore) != VK_SUCCESS ||
+        vkCreateFence(stateMachine->logicalDevice, &fenceInfo, NULL, &inFlightFence) != VK_SUCCESS)
+    {
+        exit(1);
+    }
+
+    while (!glfwWindowShouldClose(stateMachine->window))
+    {
+        glfwPollEvents();
+        vkWaitForFences(stateMachine->logicalDevice,
+                        1,
+                        &inFlightFence,
+                        VK_TRUE,
+                        UINT64_MAX);
+        vkResetFences(stateMachine->logicalDevice,
+                      1,
+                      &inFlightFence);
+
+        uint32_t imageIndex;
+        vkAcquireNextImageKHR(
+            stateMachine->logicalDevice,
+            stateMachine->swapchain,
+            UINT64_MAX,
+            imageAvailableSemaphore,
+            VK_NULL_HANDLE,
+            &imageIndex);
+
+        vkResetCommandBuffer(commandBuffer, 0);
+
+        VkCommandBufferBeginInfo beginInfo = {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        };
+
+        if (
+            vkBeginCommandBuffer(
+                commandBuffer, &beginInfo) != VK_SUCCESS)
+        {
+            exit(1);
+        }
+
+        VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+
+        VkRenderPassBeginInfo renderPassBeginInfo = {
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            .renderPass = renderPass,
+            .framebuffer = framebuffers[imageIndex],
+            .renderArea = {
+                .offset = {0, 0},
+                .extent = {
+                    .height = stateMachine->height,
+                    .width = stateMachine->width}},
+            .clearValueCount = 1,
+            .pClearValues = &clearColor};
+
+        vkCmdBeginRenderPass(
+            commandBuffer,
+            &renderPassBeginInfo,
+            VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(
+            commandBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            graphicsPipeline);
+
+        VkViewport viewport = {
+            .x = 0.0f,
+            .y = 0.0f,
+            .width = stateMachine->width,
+            .height = stateMachine->height,
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f};
+
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor = {
+            .offset = {0, 0},
+            .extent = {
+                .height = stateMachine->height,
+                .width = stateMachine->width}};
+
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+        vkCmdEndRenderPass(commandBuffer);
+
+        if (
+            vkEndCommandBuffer(
+                commandBuffer) != VK_SUCCESS)
+        {
+            exit(1);
+        }
+
+        VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
+        VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
+        VkSubmitInfo submitInfo = {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = waitSemaphores,
+            .pWaitDstStageMask = waitStages,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &commandBuffer,
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = signalSemaphores,
+        };
+
+        if (
+            vkQueueSubmit(
+                stateMachine->deviceQueue,
+                1,
+                &submitInfo,
+                inFlightFence) != VK_SUCCESS)
+        {
+            exit(1);
+        }
+
+        VkSwapchainKHR swapChains[] = {stateMachine->swapchain};
+
+        VkPresentInfoKHR presentInfo = {
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = signalSemaphores,
+            .swapchainCount = 1,
+            .pSwapchains = swapChains,
+            .pImageIndices = &imageIndex};
+
+        vkQueuePresentKHR(
+            stateMachine->deviceQueue,
+            &presentInfo);
     }
 }
