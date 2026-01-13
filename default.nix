@@ -17,7 +17,7 @@ pkgs.mkShell {
     '';
 
     shellHook = with pkgs; ''
-        gcc -no-pie -lglfw -lvulkan \
+        gcc -pie -lglfw -lvulkan \
         -I${glfw.outPath}/include/GLFW \
         -I${vulkan-headers.outPath}/include/vulkan \
         -I${vulkan-headers.outPath}/include/vk_video \

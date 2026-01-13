@@ -17,6 +17,7 @@ typedef struct VulkanerStateMachine
     VkDevice logicalDevice;
     VkQueue deviceQueue;
     VkSwapchainKHR swapchain;
+    VkPipelineShaderStageCreateInfo pipelineShaderCreateInfo[2];
 } VulkanerStateMachine;
 
 void destroyStateMachine(VulkanerStateMachine* stateMachine);

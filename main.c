@@ -4,6 +4,7 @@
 #include "surface.h"
 #include "swapchain.h"
 #include "spirv.h"
+#include "pipeline.h"
 
 #include "glfw3.h"
 #include "vulkan_core.h"
@@ -28,6 +29,7 @@ int main() {
     createSurface(&stateMachine);
     createSwapchain(&stateMachine);
     createShaderModules(&stateMachine);
+    createGraphicsPipeline(&stateMachine);
 
     while (!glfwWindowShouldClose(stateMachine.window)) {
         glfwPollEvents();

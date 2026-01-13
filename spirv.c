@@ -61,4 +61,21 @@ void createShaderModules(VulkanerStateMachine *stateMachine)
     {
         exit(1);
     }
+
+    VkPipelineShaderStageCreateInfo pipelineVertexShaderStageCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .module = vertexShaderModule,
+        .stage = VK_SHADER_STAGE_VERTEX_BIT,
+        .pName = "main"
+    };
+
+    VkPipelineShaderStageCreateInfo pipelineFragmentShaderStageCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .module = fragmentShaderModule,
+        .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .pName = "main"        
+    };
+
+    stateMachine->pipelineShaderCreateInfo[0] = pipelineVertexShaderStageCreateInfo;
+    stateMachine->pipelineShaderCreateInfo[1] = pipelineFragmentShaderStageCreateInfo;
 }
