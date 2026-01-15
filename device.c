@@ -9,14 +9,20 @@ void createDevice(VulkanerStateMachine *stateMachine)
 {
     uint32_t devicesCount;
     if (
-        vkEnumeratePhysicalDevices(stateMachine->vulkanInstance, &devicesCount, NULL) != VK_SUCCESS)
+        vkEnumeratePhysicalDevices(
+            stateMachine->vulkanInstance,
+            &devicesCount,
+            NULL) != VK_SUCCESS)
     {
         exit(1);
     }
 
     VkPhysicalDevice physicalDevices[devicesCount];
     if (
-        vkEnumeratePhysicalDevices(stateMachine->vulkanInstance, &devicesCount, physicalDevices) != VK_SUCCESS)
+        vkEnumeratePhysicalDevices(
+            stateMachine->vulkanInstance,
+            &devicesCount,
+            physicalDevices) != VK_SUCCESS)
     {
         exit(1);
     }

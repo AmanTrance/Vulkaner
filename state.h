@@ -6,19 +6,22 @@
 
 typedef struct VulkanerStateMachine
 {
-    uint32_t height;
     uint32_t width;
+    uint32_t height;
     uint32_t imagesLength;
-    GLFWwindow *window;
+
     VkImage *images;
+    GLFWwindow *window;
     VkImageView *imageViews;
     VkQueueFamilyProperties *queueFamilyProperties;
+
+    VkQueue deviceQueue;
+    VkDevice logicalDevice;
+    VkSwapchainKHR swapchain;
     VkInstance vulkanInstance;
     VkSurfaceKHR surfaceHandle;
     VkPhysicalDevice physicalDevice;
-    VkDevice logicalDevice;
-    VkQueue deviceQueue;
-    VkSwapchainKHR swapchain;
+
     VkPipelineShaderStageCreateInfo pipelineShaderCreateInfo[2];
 } VulkanerStateMachine;
 
