@@ -46,10 +46,19 @@ void createGraphicsPipeline(VulkanerStateMachine *stateMachine)
         .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
     };
 
+    VkPipelineColorBlendAttachmentState colorBlendAttachment = {
+        .colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+        .blendEnable = VK_FALSE
+    };
+
     VkPipelineColorBlendStateCreateInfo colorBlending = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .logicOpEnable = VK_FALSE,
-        .attachmentCount = 0,
+        .logicOp = VK_LOGIC_OP_COPY,
+        .attachmentCount = 1,
+        .pAttachments = &colorBlendAttachment,
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
@@ -78,9 +87,8 @@ void createGraphicsPipeline(VulkanerStateMachine *stateMachine)
         .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR};
 
     VkAttachmentReference colorAttachmentReference = {
-        .attachment = 0,
         .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    };
+        .attachment = 0};
 
     VkSubpassDescription subpass = {
         .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -193,19 +201,16 @@ void createGraphicsPipeline(VulkanerStateMachine *stateMachine)
     }
 
     VkSemaphoreCreateInfo semaphoreInfo = {
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        .flags = VK_SEMAPHORE_TYPE_BINARY};
 
     VkFenceCreateInfo fenceInfo = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .flags = VK_FENCE_CREATE_SIGNALED_BIT};
 
-    VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
     VkFence inFlightFence;
 
     if (
-        vkCreateSemaphore(stateMachine->logicalDevice, &semaphoreInfo, NULL, &imageAvailableSemaphore) != VK_SUCCESS ||
-        vkCreateSemaphore(stateMachine->logicalDevice, &semaphoreInfo, NULL, &renderFinishedSemaphore) != VK_SUCCESS ||
         vkCreateFence(stateMachine->logicalDevice, &fenceInfo, NULL, &inFlightFence) != VK_SUCCESS)
     {
         exit(1);
@@ -213,6 +218,16 @@ void createGraphicsPipeline(VulkanerStateMachine *stateMachine)
 
     while (!glfwWindowShouldClose(stateMachine->window))
     {
+        VkSemaphore imageAvailableSemaphore;
+        VkSemaphore renderFinishedSemaphore;
+
+        if (
+            vkCreateSemaphore(stateMachine->logicalDevice, &semaphoreInfo, NULL, &imageAvailableSemaphore) != VK_SUCCESS ||
+            vkCreateSemaphore(stateMachine->logicalDevice, &semaphoreInfo, NULL, &renderFinishedSemaphore) != VK_SUCCESS)
+        {
+            exit(1);
+        }
+
         glfwPollEvents();
         vkWaitForFences(stateMachine->logicalDevice,
                         1,
@@ -236,7 +251,7 @@ void createGraphicsPipeline(VulkanerStateMachine *stateMachine)
 
         VkCommandBufferBeginInfo beginInfo = {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        };
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
 
         if (
             vkBeginCommandBuffer(
@@ -321,18 +336,27 @@ void createGraphicsPipeline(VulkanerStateMachine *stateMachine)
             exit(1);
         }
 
-        VkSwapchainKHR swapChains[] = {stateMachine->swapchain};
+        vkQueueWaitIdle(stateMachine->deviceQueue);
 
         VkPresentInfoKHR presentInfo = {
             .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .waitSemaphoreCount = 1,
             .pWaitSemaphores = signalSemaphores,
             .swapchainCount = 1,
-            .pSwapchains = swapChains,
+            .pSwapchains = &stateMachine->swapchain,
             .pImageIndices = &imageIndex};
 
         vkQueuePresentKHR(
             stateMachine->deviceQueue,
             &presentInfo);
+
+        vkDestroySemaphore(
+            stateMachine->logicalDevice,
+            imageAvailableSemaphore,
+            NULL);
+        vkDestroySemaphore(
+            stateMachine->logicalDevice,
+            renderFinishedSemaphore,
+            NULL);
     }
 }
